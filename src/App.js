@@ -1,9 +1,35 @@
-import React, { useState } from "react";
-import GoogleAuthButton from "./GoogleAuthButton";
+import React, { useEffect, useState } from "react";
+import SpreadSheetInput from "./SpreadSheetInput";
+import AuthButton from "./AuthButton";
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [sheetId, setSheetId] = useState(null);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    window.gapi.load("client:auth2", () => {
+      window.gapi.client
+        .init({
+          clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+          discoveryDocs: [
+            "https://sheets.googleapis.com/$discovery/rest?version=v4"
+          ],
+          scope: "https://www.googleapis.com/auth/spreadsheets"
+        })
+        .then(
+          function() {
+            window.gapi.auth2
+              .getAuthInstance()
+              .isSignedIn.listen(setIsSignedIn);
+
+            setIsSignedIn(window.gapi.auth2.getAuthInstance().isSignedIn.get());
+          },
+          function(error) {
+            console.error(error);
+          }
+        );
+    });
+  }, []);
+
   return (
     <>
       <nav className="navbar">
@@ -15,15 +41,7 @@ function App() {
           <div className="navbar-end">
             <div className="navbar-item">
               <div className="buttons">
-                <GoogleAuthButton
-                  clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
-                  onLogin={() => {
-                    setAuthenticated(true);
-                  }}
-                  onLogout={() => {
-                    setAuthenticated(false);
-                  }}
-                />
+                <AuthButton isSignedIn={isSignedIn} />
               </div>
             </div>
           </div>
@@ -31,21 +49,21 @@ function App() {
       </nav>
 
       <section className="section">
-        {authenticated && (
-          <>
-            <div className="field is-grouped">
-              <div className="control is-expanded">
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="Google Sheets Id"
-                />
-              </div>
-              <div className="control">
-                <button className="button">Load</button>
-              </div>
-            </div>
-          </>
+        {isSignedIn && (
+          <SpreadSheetInput
+            onSubmit={spreadsheetId => {
+              console.log(spreadsheetId);
+              window.gapi.client.sheets.spreadsheets.values
+                .get({
+                  spreadsheetId,
+                  range: "Sheet1!A1:D5"
+                })
+                .then(
+                  response => console.log(response),
+                  error => console.log(error)
+                );
+            }}
+          />
         )}
       </section>
     </>
