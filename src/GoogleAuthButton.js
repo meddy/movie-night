@@ -27,6 +27,10 @@ export default function GoogleAuthButton(props) {
           buttonText={disabled ? "..." : "Login"}
           disabled={disabled}
           isSignedIn
+          discoveryDocs={[
+            "https://sheets.googleapis.com/$discovery/rest?version=v4"
+          ]}
+          scopes={["https://www.googleapis.com/auth/spreadsheets"]}
           onFailure={() => {}}
           onSuccess={response => {
             setIsLoggedIn(true);
